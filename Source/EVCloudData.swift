@@ -463,7 +463,14 @@ open class EVCloudData: EVObject {
         EVLog("upsert \(recordId) \(EVReflection.swiftStringFromClass(item))")
         for (filter, predicate) in self.predicates {
             if recordType[filter] == EVReflection.swiftStringFromClass(item) {
-                let itemID: Int? = data[filter]!.EVindexOf {i in return i.recordID.recordName == recordId}
+                let itemID: Int? = data[filter]!.EVindexOf {i in
+                    if i.recordID.isKind(of: NSString.self) {
+                        return (i.recordID as! String) == recordId
+                    }
+                    else {
+                        return i.recordID.recordName == recordId
+                    }
+                }
                 if predicate.evaluate(with: item) {
                     var existingItem: CKDataObject?
                     if itemID != nil && itemID < data[filter]!.count {
@@ -514,7 +521,14 @@ open class EVCloudData: EVObject {
      */
     fileprivate func deleteObject(_ recordId: String) {
         for (filter, _) in self.data {
-            if let itemID: Int = data[filter]?.EVindexOf({item in return item.recordID.recordName == recordId}) {
+            if let itemID: Int = data[filter]?.EVindexOf({item in
+                if item.recordID.isKind(of: NSString.self) {
+                    return (item.recordID as! String) == recordId
+                }
+                else {
+                    return item.recordID.recordName == recordId
+                }
+            }) {
                 data[filter]!.remove(at: itemID)
                 OperationQueue.main.addOperation {
                     (self.deletedHandlers[filter]!)(recordId, itemID)
